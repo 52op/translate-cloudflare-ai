@@ -42,6 +42,13 @@ function formatLang(lang: string) {
 	return lang.charAt(0).toUpperCase() + lang.slice(1)
 }
 
+function extractText(response: any): string {
+	return response.response
+		|| response.choices?.[0]?.message?.content
+		|| response.result?.response
+		|| ''
+}
+
 async function translateWithLLM(ai: Ai, model: string, text: string, sourceLang: string, targetLang: string, systemPrompt: string) {
 	const targetLangName = normalizeLang(targetLang)
 	const langTarget = formatLang(targetLangName)
@@ -52,8 +59,8 @@ async function translateWithLLM(ai: Ai, model: string, text: string, sourceLang:
 	} else {
 		messages.push({ role: 'user', content: text })
 	}
-	const response = await ai.run(model, { messages })
-	return { text: response.response }
+	const resp = await ai.run(model, { messages })
+	return { text: extractText(resp) }
 }
 
 async function translateWithTranslationModel(ai: Ai, model: string, text: string, sourceLang: string, targetLang: string) {
