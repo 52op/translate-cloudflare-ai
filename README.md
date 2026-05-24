@@ -17,13 +17,13 @@ npx wrangler deploy
 
 ## 环境变量
 
-在 Cloudflare Dashboard → Worker → **变量与机密** 中设置：
+所有变量均在 Cloudflare Dashboard → Worker → **机密** 中设置，`wrangler deploy` 不会清掉机密。
 
 | 变量 | 必填 | 说明 |
 |---|---|---|
 | `URL_PREFIX` | 否 | 路径前缀，如 `/translate`，不设置则不限制路径 |
 | `ALLOW_ORIGINS` | 否 | 允许的请求来源 Origin，逗号分隔，支持 `*` 通配。为空则不检查 Origin |
-| `API_TOKEN` | 否 | Bearer Token 鉴权，需走 `Authorization: Bearer <token>` 请求头。此变量需在**机密**中设置 |
+| `API_TOKEN` | 否 | Bearer Token 鉴权，需走 `Authorization: Bearer <token>` 请求头 |
 | `MODEL` | 否 | AI 模型，默认 `@cf/meta/m2m100-1.2b`。可切换为 LLM 提升翻译质量（见下方模型推荐） |
 | `SYSTEM_PROMPT` | 否 | 仅 LLM 模型有效。自定义 system prompt，不设置则有默认的翻译 prompt |
 

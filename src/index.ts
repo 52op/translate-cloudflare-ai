@@ -97,7 +97,7 @@ export default {
 
 			const translations = await Promise.all(text_list.map(async (text: string) => {
 				const result = await translate(env.AI, model, text, source_lang, target_lang, env.SYSTEM_PROMPT || '')
-				return { detected_source_lang: source_lang || 'auto', ...result }
+				return { detected_source_lang: source_lang || 'auto', model, ...result }
 			}));
 
 			return new Response(JSON.stringify({ translations, message: 'ok' }));
