@@ -1,13 +1,10 @@
 name = "translate-cloudflare-ai"
 main = "src/index.ts"
 compatibility_date = "2026-05-24"
+keep_vars = true
 
 [ai]
 binding = "AI"
 
 [vars]
 URL_PREFIX = "/translate"
-ALLOW_ORIGINS = ""
-MODEL = ""
-SYSTEM_PROMPT = ""
-API_TOKEN = ""
