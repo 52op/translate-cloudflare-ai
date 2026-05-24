@@ -20,10 +20,28 @@ npx wrangler deploy
 在 Cloudflare Dashboard → Worker → **变量与机密** 中设置：
 
 | 变量 | 必填 | 说明 |
-|---|---|---|
+|---|---|---|---|
 | `URL_PREFIX` | 否 | 路径前缀，如 `/translate`，不设置则不限制路径 |
 | `ALLOW_ORIGINS` | 否 | 允许的请求来源 Origin，逗号分隔，支持 `*` 通配。为空则不检查 Origin |
 | `API_TOKEN` | 否 | Bearer Token 鉴权，需走 `Authorization: Bearer <token>` 请求头。此变量需在**机密**中设置 |
+| `MODEL` | 否 | AI 模型，默认 `@cf/meta/m2m100-1.2b`。可切换为 LLM 提升翻译质量（见下方模型推荐） |
+| `SYSTEM_PROMPT` | 否 | 仅 LLM 模型有效。自定义 system prompt，不设置则有默认的翻译 prompt |
+
+### 模型推荐
+
+默认的 `@cf/meta/m2m100-1.2b` 是专用翻译模型（$0.34/M tokens），性价比高但质量一般。如果需要更好效果，可以换用 LLM：
+
+| 模型 | 特点 |
+|---|---|
+| `@cf/qwen/qwen3-30b-a3b-fp8` | **推荐**，中英文翻译质量极高 |
+| `@cf/meta/llama-4-scout-17b-16e-instruct` | Llama 4，通用能力强 |
+| `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | 快速 70B 模型 |
+
+切换到 LLM 后在环境变量中设置：
+
+```
+MODEL = @cf/qwen/qwen3-30b-a3b-fp8
+```
 
 ### 鉴权规则
 

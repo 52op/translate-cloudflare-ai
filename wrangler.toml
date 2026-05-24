@@ -8,3 +8,5 @@ binding = "AI"
 [vars]
 URL_PREFIX = "/translate"
 # ALLOW_ORIGINS = "https://example.com,*.pages.dev"
+# MODEL = "@cf/meta/m2m100-1.2b"
+# SYSTEM_PROMPT = "You are a professional translator. Translate the user's text to Chinese. Output only the translated text."

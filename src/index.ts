@@ -3,7 +3,11 @@ export interface Env {
 	URL_PREFIX: string;
 	ALLOW_ORIGINS?: string;
 	API_TOKEN?: string;
+	MODEL?: string;
+	SYSTEM_PROMPT?: string;
 }
+
+const TRANSLATION_MODELS = ['m2m100', 'indictrans']
 
 function checkOrigin(request: Request, allowedOrigins?: string): boolean {
 	if (!allowedOrigins) return true;
@@ -24,6 +28,41 @@ function checkToken(request: Request, apiToken?: string): boolean {
 
 function forbid(msg: string) {
 	return new Response(JSON.stringify({ message: msg }), { status: 403 });
+}
+
+function isTranslationModel(model: string) {
+	return TRANSLATION_MODELS.some(id => model.includes(id))
+}
+
+function normalizeLang(lang: string) {
+	return lang === "zh-CN" ? "chinese" : lang
+}
+
+function formatLang(lang: string) {
+	return lang.charAt(0).toUpperCase() + lang.slice(1)
+}
+
+async function translateWithLLM(ai: Ai, model: string, text: string, sourceLang: string, targetLang: string, systemPrompt: string) {
+	const targetLangName = normalizeLang(targetLang)
+	const langTarget = formatLang(targetLangName)
+	const prompt = systemPrompt || `You are a professional translator. Translate the user's text to ${langTarget}. Output only the translated text, no explanations or notes.`
+	const messages: { role: string; content: string }[] = [{ role: 'system', content: prompt }]
+	if (sourceLang && sourceLang !== 'auto') {
+		messages.push({ role: 'user', content: `Translate from ${formatLang(sourceLang)} to ${langTarget}: ${text}` })
+	} else {
+		messages.push({ role: 'user', content: text })
+	}
+	const response = await ai.run(model, { messages })
+	return { text: response.response }
+}
+
+async function translateWithTranslationModel(ai: Ai, model: string, text: string, sourceLang: string, targetLang: string) {
+	const response = await ai.run(model, {
+		text,
+		target_lang: normalizeLang(targetLang),
+		...(sourceLang && sourceLang !== "auto" ? { source_lang: sourceLang } : {}),
+	})
+	return { text: response.translated_text }
 }
 
 export default {
@@ -52,16 +91,13 @@ export default {
 			if (!Array.isArray(text_list) || !text_list.length) {
 				return new Response(JSON.stringify({ message: 'Invalid text_list' }), { status: 400 });
 			}
+
+			const model = env.MODEL || '@cf/meta/m2m100-1.2b'
+			const translate = isTranslationModel(model) ? translateWithTranslationModel : translateWithLLM
+
 			const translations = await Promise.all(text_list.map(async (text: string) => {
-				const response = await env.AI.run('@cf/meta/m2m100-1.2b', {
-					text,
-					target_lang: target_lang === "zh-CN" ? "chinese" : target_lang,
-					...(source_lang && source_lang !== "auto" ? { source_lang } : {}),
-				});
-				return {
-					detected_source_lang: source_lang,
-					text: response.translated_text
-				};
+				const result = await translate(env.AI, model, text, source_lang, target_lang, env.SYSTEM_PROMPT || '')
+				return { detected_source_lang: source_lang || 'auto', ...result }
 			}));
 
 			return new Response(JSON.stringify({ translations, message: 'ok' }));
