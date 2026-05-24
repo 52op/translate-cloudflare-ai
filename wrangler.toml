@@ -7,3 +7,4 @@ binding = "AI"
 
 [vars]
 URL_PREFIX = "/translate"
+# ALLOW_ORIGINS = "https://example.com,*.pages.dev"

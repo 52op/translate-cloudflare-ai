@@ -1,6 +1,29 @@
 export interface Env {
 	AI: Ai;
 	URL_PREFIX: string;
+	ALLOW_ORIGINS?: string;
+	API_TOKEN?: string;
+}
+
+function checkOrigin(request: Request, allowedOrigins?: string): boolean {
+	if (!allowedOrigins) return true;
+	const origin = request.headers.get('Origin');
+	if (!origin) return false;
+	return allowedOrigins.split(',').map(s => s.trim()).some(o => {
+		if (o === '*') return true;
+		if (o.startsWith('*.')) return origin.endsWith(o.slice(1));
+		return origin === o;
+	});
+}
+
+function checkToken(request: Request, apiToken?: string): boolean {
+	if (!apiToken) return true;
+	const auth = request.headers.get('Authorization');
+	return auth === `Bearer ${apiToken}`;
+}
+
+function forbid(msg: string) {
+	return new Response(JSON.stringify({ message: msg }), { status: 403 });
 }
 
 export default {
@@ -14,9 +37,14 @@ export default {
 		}
 
 		const urlPath = new URL(request.url).pathname;
-
 		if (env.URL_PREFIX && !urlPath.startsWith(env.URL_PREFIX)) {
-			return new Response(JSON.stringify({ message: 'Forbidden' }), { status: 403 });
+			return forbid('Forbidden');
+		}
+
+		const originOk = checkOrigin(request, env.ALLOW_ORIGINS);
+		const tokenOk = checkToken(request, env.API_TOKEN);
+		if (!originOk && !tokenOk) {
+			return forbid('Forbidden');
 		}
 
 		try {
