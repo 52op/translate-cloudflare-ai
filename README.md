@@ -20,7 +20,7 @@ npx wrangler deploy
 在 Cloudflare Dashboard → Worker → **变量与机密** 中设置：
 
 | 变量 | 必填 | 说明 |
-|---|---|---|---|
+|---|---|---|
 | `URL_PREFIX` | 否 | 路径前缀，如 `/translate`，不设置则不限制路径 |
 | `ALLOW_ORIGINS` | 否 | 允许的请求来源 Origin，逗号分隔，支持 `*` 通配。为空则不检查 Origin |
 | `API_TOKEN` | 否 | Bearer Token 鉴权，需走 `Authorization: Bearer <token>` 请求头。此变量需在**机密**中设置 |
