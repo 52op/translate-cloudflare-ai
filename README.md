@@ -24,7 +24,7 @@ npx wrangler deploy
 | `URL_PREFIX` | 否 | 路径前缀，如 `/translate`，不设置则不限制路径 |
 | `ALLOW_ORIGINS` | 否 | 允许的请求来源 Origin，逗号分隔，支持 `*` 通配。为空则不检查 Origin |
 | `API_TOKEN` | 否 | Bearer Token 鉴权，需走 `Authorization: Bearer <token>` 请求头。此变量需在**机密**中设置 |
-| `MODEL` | 否 | AI 模型，默认 `@cf/meta/m2m100-1.2b`。可切换为 LLM 提升翻译质量（见下方模型推荐） |
+| `MODEL` | 否 | AI 模型，默认 `@cf/meta/m2m100-1.2b`。可切换为 LLM 提升翻译质量（见下方模型推荐）。支持逗号分隔多个模型，第一个失败时自动轮询下一个 |
 | `SYSTEM_PROMPT` | 否 | 仅 LLM 模型有效。自定义 system prompt，不设置则有默认的翻译 prompt |
 
 ### 模型推荐
@@ -41,6 +41,12 @@ npx wrangler deploy
 
 ```
 MODEL = @cf/qwen/qwen3-30b-a3b-fp8
+```
+
+也支持逗号分隔多个模型，第一个失败时自动换下一个：
+
+```
+MODEL = @cf/qwen/qwen3-30b-a3b-fp8,@cf/meta/m2m100-1.2b
 ```
 
 ### 鉴权规则

@@ -99,14 +99,24 @@ export default {
 				return new Response(JSON.stringify({ message: 'Invalid text_list' }), { status: 400 });
 			}
 
-			const model = env.MODEL || '@cf/meta/m2m100-1.2b'
-			const translate = isTranslationModel(model) ? translateWithTranslationModel : translateWithLLM
+			const models = (env.MODEL || '@cf/meta/m2m100-1.2b').split(',').map(s => s.trim())
+			let translations
+			let lastError
 
-			const translations = await Promise.all(text_list.map(async (text: string) => {
-				const result = await translate(env.AI, model, text, source_lang, target_lang, env.SYSTEM_PROMPT || '')
-				return { detected_source_lang: source_lang || 'auto', model, ...result }
-			}));
+			for (const model of models) {
+				try {
+					const translate = isTranslationModel(model) ? translateWithTranslationModel : translateWithLLM
+					translations = await Promise.all(text_list.map(async (text: string) => {
+						const result = await translate(env.AI, model, text, source_lang, target_lang, env.SYSTEM_PROMPT || '')
+						return { detected_source_lang: source_lang || 'auto', model, ...result }
+					}))
+					break
+				} catch (e) {
+					lastError = e
+				}
+			}
 
+			if (!translations) throw lastError
 			return new Response(JSON.stringify({ translations, message: 'ok' }));
 		} catch (error) {
 			return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
