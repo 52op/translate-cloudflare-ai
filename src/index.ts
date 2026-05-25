@@ -30,11 +30,12 @@ function corsHeader(request: Request, allowedOrigins?: string): string {
 	const origin = request.headers.get('Origin')
 	if (!allowedOrigins || !origin) return '*'
 	if (allowedOrigins === '*') return '*'
-	return allowedOrigins.split(',').map(s => s.trim()).find(o => {
+	const ok = allowedOrigins.split(',').map(s => s.trim()).some(o => {
 		if (o === '*') return true
 		if (o.startsWith('*.')) return origin.endsWith(o.slice(1))
 		return origin === o
-	}) || origin
+	})
+	return ok ? origin : origin
 }
 
 function isTranslationModel(model: string) {
