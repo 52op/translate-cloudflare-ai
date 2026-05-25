@@ -26,8 +26,15 @@ function checkToken(request: Request, apiToken?: string): boolean {
 	return auth === `Bearer ${apiToken}`;
 }
 
-function forbid(msg: string) {
-	return new Response(JSON.stringify({ message: msg }), { status: 403 });
+function corsHeader(request: Request, allowedOrigins?: string): string {
+	const origin = request.headers.get('Origin')
+	if (!allowedOrigins || !origin) return '*'
+	if (allowedOrigins === '*') return '*'
+	return allowedOrigins.split(',').map(s => s.trim()).find(o => {
+		if (o === '*') return true
+		if (o.startsWith('*.')) return origin.endsWith(o.slice(1))
+		return origin === o
+	}) || origin
 }
 
 function isTranslationModel(model: string) {
@@ -74,29 +81,38 @@ async function translateWithTranslationModel(ai: Ai, model: string, text: string
 
 export default {
 	async fetch(request: Request, env: Env) {
+		const acao = corsHeader(request, env.ALLOW_ORIGINS)
+		const baseHeaders = { 'Access-Control-Allow-Origin': acao, 'Content-Type': 'application/json' }
+
+		if (request.method === 'OPTIONS') {
+			return new Response(null, {
+				headers: { ...baseHeaders, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Max-Age': '86400' },
+			})
+		}
+
 		if (request.method !== 'POST') {
-			return new Response(JSON.stringify({ message: 'Method Not Allowed' }), { status: 405 });
+			return new Response(JSON.stringify({ message: 'Method Not Allowed' }), { status: 405, headers: baseHeaders })
 		}
 
 		if (!request.headers.get('Content-Type')?.includes('application/json')) {
-			return new Response(JSON.stringify({ message: 'Unsupported Media Type' }), { status: 415 });
+			return new Response(JSON.stringify({ message: 'Unsupported Media Type' }), { status: 415, headers: baseHeaders })
 		}
 
 		const urlPath = new URL(request.url).pathname;
 		if (env.URL_PREFIX && !urlPath.startsWith(env.URL_PREFIX)) {
-			return forbid('Forbidden');
+			return new Response(JSON.stringify({ message: 'Forbidden' }), { status: 403, headers: baseHeaders })
 		}
 
 		const originOk = checkOrigin(request, env.ALLOW_ORIGINS);
 		const tokenOk = checkToken(request, env.API_TOKEN);
 		if (!originOk && !tokenOk) {
-			return forbid('Forbidden');
+			return new Response(JSON.stringify({ message: 'Forbidden' }), { status: 403, headers: baseHeaders })
 		}
 
 		try {
 			const { source_lang, target_lang, text_list } = await request.json() as any;
 			if (!Array.isArray(text_list) || !text_list.length) {
-				return new Response(JSON.stringify({ message: 'Invalid text_list' }), { status: 400 });
+				return new Response(JSON.stringify({ message: 'Invalid text_list' }), { status: 400, headers: baseHeaders })
 			}
 
 			const models = (env.MODEL || '@cf/meta/m2m100-1.2b').split(',').map(s => s.trim())
@@ -117,9 +133,9 @@ export default {
 			}
 
 			if (!translations) throw lastError
-			return new Response(JSON.stringify({ translations, message: 'ok' }));
+			return new Response(JSON.stringify({ translations, message: 'ok' }), { headers: baseHeaders })
 		} catch (error) {
-			return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
+			return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500, headers: baseHeaders })
 		}
 	},
 }
